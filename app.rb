@@ -1,125 +1,169 @@
-
 require 'bundler'
 Bundler.require
 
+require 'rack'
+require 'sinatra/reloader'
 require 'rack-flash'
 
-ActiveRecord::Base.configurations = YAML.load_file("config/database.yml")
-ActiveRecord::Base.establish_connection("development")
+set :bind, '0.0.0.0'
+# set :environment, :production
 
 
+# connectionのところのdevelopmentはシンボルで
+ActiveRecord::Base.configurations=YAML.load_file('db/database.yml')
+ActiveRecord::Base.establish_connection(:development)
 
-# class Line < ActiveRecord::Base
+class Line
 
-# before
+  class User < ActiveRecord::Base
 
-# end
-#
-# end
+    has_many :Comments
+
+    #　passwordをハッシュ化→bcrypt　gemを読み込む
+    has_secure_password
+    # これはDB上でnot nullにしているのでいらないかも
+    validates :name, :password, :email, presence: true
+    validates :password, :email, length: { minimum: 6 }
+  end
 
 
+  class Comment < ActiveRecord::Base
+    #usersとリレーション
+     belongs_to :user
+  end
+
+  #セッション
+  enable :sessions
+  # Flashが使用可
+  use Rack::Flash
+
+  before do
+    set_login_user
+    set_to_user
+  end
+
+  helpers Sinatra::ContentFor
   helpers do
 
     def login?
-      !session[:password].nil?
+      session[:user_id].present?
     end
 
-    def username
-
-     if  login?
-      User.find_by(session[:password]).name :''
-     end
-
+    def set_login_user
+      @login_user = User.find_by(id: session[:user_id]) if login?
     end
 
-
-     include Rack::Utils
-     alias_method :h, :escape_html
+    def exist?
+       params[:id].present?
     end
-    #
-    #   #セッション
-     enable :sessions
-     #Flashが使用可
-     use Rack::Flash
-    #
-    #
 
-    # get '/' do
-    #   @title ='index_page'
-    #   erb :index_page
-    # end
+    def set_to_user
+      @to_user_id = Comment.find_by(to_user: params[:id]) if exist?
+    end
 
-    get '/login' do
+  # エスケープ処理
+    include Rack::Utils
+    alias_method :h, :escape_html
+  end
+
+  #-----------------------------------------------------------------
+
+  get '/' do
+     @title ='index_page'
+     erb :index_page
+  end
+
+
+  get '/login' do
+    @title = "login_page"
+    erb :login_page
+  end
+
+  post '/login' do
+
+    user = User.find_by(name: params[:name])
+    #userの名前とパスワードの一致させる
+    if user && user.authenticate(params[:password])
+      session[:user_id] = user.id
+      flash[:notice] = "ログインに成功しました。"
+      redirect "/home"
+    else
+      flash[:notice] = "ログインしてください"
       erb :login_page
     end
+  end
 
-    post '/login' do
+  get '/home' do
+    @users = User.order("id")
 
-      @title = "login_page"
-      user = User.find_by(name: params[:name])
-      #userの名前とパスワードの一致
-      if user && user.authenticate(params[:password])
-        session[:user_name] = user.name
-        flash[:notice] = "ログインに成功しました。"
-        redirect "/home"
-      else
-        flash[:notice] = "ログインしてください。"
-        erb :login_page
-      end
+    erb :home
+  end
+
+  get '/my_page' do
+
+  end
+
+
+  get '/talk/:id/:name' do
+    @to_user_id = params[:id]
+    @to_user = params[:name]
+    @comments = Comment.where(user_id: session[:user_id], to_user: @to_user_id).all
+    # @comments = Comment.find_by(user_id: session[:id], to_user: params[:id])
+
+    erb :talk
+  end
+
+  post '/new' do
+    if params[:body].present?
+       @comments = Comment.create( user_id: session[:user_id], body: params[:body], to_user: params[:id])
+       redirect back
+    end
+  end
+
+  post '/login_failure' do
+    @title = "login_failure"
+     "ログインに失敗しました"
+    redirect '/login'
+  end
+
+  get '/create_account' do
+    erb :create_account
+  end
+
+  post '/create_account' do
+    @title = "create_account"
+
+    user = User.new do |u|
+      u.name = params[:name]
+      u.password = params[:password]
+      u.email = params[:email]
+      u.save
     end
 
-    get '/home' do
-      erb :home
+    # userが有効で保存されているなら
+    if user.valid? && user.save
+      session[:user_id] = user.id
+      session[:user_name] = user.name
+      redirect '/home'
+    else
+      redirect back
     end
 
-    post '/home' do
-      if login?
-        @title = "home"
-        @users = User.all
-        @user_name = [:user_name]
-        erb :home
-      else
-        redirect '/login'
-      end
+  end
 
-    end
+  get '/logout' do
+    session.clear
+  end
 
-
-    post '/login_failure' do
-      @title =  "login_failure"
-      erb :login_failure
-    end
-
-    get '/create_account' do
-      erb :create_account
-    end
-
-    post '/create_account' do
-      @title = "create_account"
-
-      user = User.new do |u|
-        u.name = params[:name]
-        u.password = params[:password]
-        u.email = params[:email]
-      end
-
-      if user.valid? && user.save
-        session[:uid] = user.id
-        redirect '/'
-      else
-        redirect back
-      end
-
-    end
-
-    get '/logout' do
-       'ログアウトしました。'
-    end
-
-# end
-class User < ActiveRecord::Base
+# HelloWorldApp.run! if app_file == $0
+  
 
 end
 
-class Comment < ActiveRecord::Base
-end
+
+
+
+
+
+
+

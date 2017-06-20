@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 source "https://rubygems.org"
 
-# gem "これはbundleでまとめれる？"
+# gem これはbundleで一気にrequire
 
+gem 'mysql2'
 gem 'sinatra'
 gem 'activerecord'
 gem 'sinatra-contrib'
@@ -11,5 +12,8 @@ gem 'rake'
 gem 'rack'
 gem 'rack-flash3'
 
-gem "mysql2"
+
+gem 'bcrypt'
+
+
 

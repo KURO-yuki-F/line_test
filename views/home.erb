@@ -1,27 +1,37 @@
-<div class="home_page">
+
 
   <div class="user_name">
-     <%=@user_name%>さんようこそ！
+     <%= @login_user.name %>さんようこそ！
   </div>
+
   <div class="menu">
     <div class="my_account">
       ・アカウント設定
     </div>
-    <div class="friends">
-      <a href="">友達</a>
-    </div>
-    <div class="talk">
-      ・トーク
-    </div>
-    <div class="add_friend">
-      <a href="/add_friend">友達追加</a>
-        <div class="add_table">
-          ・友達検索
-          ・リクエスト承認待ち一覧
-          ・リクエスト中一覧
-        </div>
-    </div>
-    　
-  </div>
 
-</div>
+
+    <div>
+      <% if @users.present? %>
+          <% @users.each do |user| %>
+            <% if user.name == @login_user.name %>
+               <%next%>
+            <%end%>
+              <a href="/talk/<%=user.id%>/<%=user.name%>"><%=user.name%></a></n>
+              <hr>
+          <% end %>
+      <% end %>
+
+
+    </div>
+
+
+
+  </div>
+    <!--友達追加は後ほど-->
+    <!--<div class="add_friend">-->
+      <!--<a href="/add_friend">友達追加</a>-->
+        <!--<div class="add_table">-->
+          <!--・友達検索-->
+          <!--・リクエスト承認待ち一覧-->
+          <!--・リクエスト中一覧-->
+        <!--</div>-->

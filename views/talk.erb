@@ -1,0 +1,23 @@
+<% content_for :css do %>
+    /talk.css
+<% end %>
+
+
+
+<div class=talks style >
+  <p><%=@to_user%>さんとトークです </p>
+  <ul style="list-style: none;">
+    <% @comments.each do |c| %>
+
+
+        <li data-id="<%= c.id %>">
+          <%= c.body %>
+        </li>
+
+    <% end %>
+
+  </ul>
+  <form action="/new" method="post">
+    <input type="text" name="body"> <input type="submit" value="送信">
+  </form>
+</div>

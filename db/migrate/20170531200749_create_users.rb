@@ -12,9 +12,7 @@ class CreateUsers < ActiveRecord::Migration[5.1]
 end
 
 
-create table users(
-    id int not null,
-     name str not null,
 
-);
+
+
 
